@@ -289,6 +289,15 @@
     @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(8px); } }
     .toast.show { animation: toastIn 200ms ease-out forwards; }
     .toast.hide { animation: toastOut 200ms ease-in forwards; }
+    /* Wallet chooser */
+    .chooser-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:60; }
+    .chooser-panel { width: min(440px, 92%); background:#0f141e; border:1px solid #2b3550; border-radius:14px; padding:16px; box-shadow:0 14px 40px #0009; color:#d6e3ff; }
+    .chooser-panel h3 { margin:0 0 8px; font-size:18px; }
+    .chooser-panel p { margin:0 0 12px; color:#97aacb; font-size:13px; }
+    .chooser-actions { display:flex; gap:10px; flex-wrap:wrap; }
+    .chooser-btn { flex:1; padding:12px 14px; border-radius:10px; border:1px solid #2a2f36; background:#1a2452; color:#fff; cursor:pointer; font-weight:700; text-align:center; }
+    .chooser-btn.secondary { background:#1b2230; color:#d6e3ff; }
+    .chooser-close { margin-top:10px; display:block; width:100%; text-align:center; color:#9fb4db; cursor:pointer; font-size:12px; }
     /* Showcase: constrain image inside a fixed square frame */
     .showcase { display:flex; justify-content:center; margin:24px 0 14px; }
     .showcase .frame { width: min(420px, 100%); aspect-ratio: 1/1; border:1px solid #2a2f36; border-radius:14px; overflow:hidden; background: linear-gradient(180deg,#121a30,#0f1628); box-shadow: 0 6px 20px #0004; position:relative; }
@@ -333,9 +342,9 @@
           <span class="badge">Preview</span>
         </div>
       </div>
-      <div class="row">
-        <div>
-          <label>Quantity</label><br>
+      <div class="row" style="align-items:flex-end; justify-content:space-between;">
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="margin:0; font-weight:600; color:#cfe1ff;">Quantity</label>
           <div class="stepper">
             <button type="button" id="qtyMinus">−</button>
             <input id="qty" type="number" min="1" max="10" value="1" />
@@ -400,6 +409,8 @@
   </footer>
 
   <script src="bundle.js"></script>
+  <!-- PaxiHub helper (provides window.PaxiCosmJS in PaxiHub webview) -->
+  <script src="https://mainnet-api.paxinet.io/resources/js/paxi-cosmjs.umd.js"></script>
   <script>
     // Placeholder explorer base (easy to replace later)
     const EXPLORER_BASE = 'https://explorer.placeholder/tx/';
@@ -414,6 +425,29 @@
       setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); }, hideDelay);
       setTimeout(()=>{ el.remove(); }, hideDelay + 200);
     };
+
+    // Deteksi perangkat & preferensi wallet
+    const isMobile = ()=> /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent||'');
+    const getWalletPref = ()=> localStorage.getItem('wallet_pref')||'';
+    const setWalletPref = (v)=> localStorage.setItem('wallet_pref', v);
+    const openPaxiHub = ()=> { try{ const u=new URL(window.location.href); window.location.href = 'paxi://hub/explorer?url='+encodeURIComponent(u.toString()); }catch(e){} };
+    function showWalletChooser({mode}){
+      const bd=document.createElement('div'); bd.className='chooser-backdrop';
+      const panel=document.createElement('div'); panel.className='chooser-panel';
+      const title = mode==='both'? 'Pilih Wallet' : 'Buka di aplikasi wallet';
+      const desc  = mode==='both'? 'Silakan pilih dompet yang ingin digunakan untuk terhubung.' : 'Tidak menemukan wallet terpasang. Pilih salah satu opsi di bawah ini.';
+      panel.innerHTML = `<h3>${title}</h3><p>${desc}</p>
+        <div class="chooser-actions">
+          <button class="chooser-btn" id="btnOpenPaxiHub">Buka di PaxiHub</button>
+          <button class="chooser-btn secondary" id="btnOpenKeplr">Buka di Keplr</button>
+        </div>
+        <span class=\"chooser-close\" id=\"btnChooserClose\">Tutup</span>`;
+      bd.appendChild(panel); document.body.appendChild(bd);
+      const close=()=> bd.remove();
+      panel.querySelector('#btnChooserClose').onclick=close;
+      panel.querySelector('#btnOpenPaxiHub').onclick=()=>{ setWalletPref('paxihub'); close(); openPaxiHub(); };
+      panel.querySelector('#btnOpenKeplr').onclick=()=>{ setWalletPref('keplr'); try{ navigator.clipboard.writeText(window.location.href).then(()=> toast('URL disalin. Buka via Keplr > Browser lalu tempel URL.','info')); }catch(e){} close(); };
+    }
     // UI labels now in English
     const CONTRACT = 'paxi1rnraxu54huv7wkmpff3v8mzhqh49g0e60x4ehzws4ee6upcy78sqc55vx0';
     const RPC = 'https://testnet-rpc.paxinet.io';
@@ -533,13 +567,29 @@
 
     async function connect(){
       try{
-        if(!window.keplr) throw new Error('Keplr not found');
-        await window.keplr.enable(CHAIN_ID);
-        const signer = window.keplr.getOfflineSignerAuto ? await window.keplr.getOfflineSignerAuto(CHAIN_ID): await window.keplr.getOfflineSigner(CHAIN_ID);
-        client = await SigningCosmWasmClient.connectWithSigner(RPC, signer, { prefix:'paxi', gasPrice: GasPrice.fromString('0.05'+DENOM) });
-        const acc = await signer.getAccounts(); 
-        address = acc[0].address; 
-        log('Connected', { address });
+        const hasPaxiHub = !!(window.paxihub && window.paxihub.paxi);
+        const hasKeplr   = !!window.keplr;
+        const pref = getWalletPref();
+        if (!hasPaxiHub && !hasKeplr && isMobile()) { showWalletChooser({mode:'none'}); return; }
+        if (hasPaxiHub && hasKeplr && !pref && isMobile()) { showWalletChooser({mode:'both'}); return; }
+
+        if (hasPaxiHub && (pref==='paxihub' || !hasKeplr)) {
+          const info = await window.paxihub.paxi.getAddress();
+          address = info.address;
+          client = null;
+          setWalletPref('paxihub');
+          log('Connected', { address });
+        } else if (hasKeplr) {
+          await window.keplr.enable(CHAIN_ID);
+          const signer = window.keplr.getOfflineSignerAuto ? await window.keplr.getOfflineSignerAuto(CHAIN_ID): await window.keplr.getOfflineSigner(CHAIN_ID);
+          client = await SigningCosmWasmClient.connectWithSigner(RPC, signer, { prefix:'paxi', gasPrice: GasPrice.fromString('0.05'+DENOM) });
+          const acc = await signer.getAccounts(); 
+          address = acc[0].address; 
+          setWalletPref('keplr');
+          log('Connected', { address });
+        } else {
+          throw new Error('Wallet tidak ditemukan');
+        }
         document.getElementById('connectBtn').textContent = address.slice(0,6)+'...'+address.slice(-4);
         document.getElementById('walletBox').classList.add('open');
         await refresh(); 
@@ -561,14 +611,37 @@
 
     async function mint(qty){ 
       try{ 
-        if(!client||!address) throw new Error('Connect your wallet first'); 
+        if(!address) throw new Error('Connect your wallet first'); 
         qty=Math.max(1,Math.min(10,Number(qty)||1)); 
-        const funds=coins(PRICE*qty,DENOM); 
-        const fee= calculateFee(350000*qty, GasPrice.fromString('0.05'+DENOM)); 
-        const msg= qty===1?{public_mint:{}}:{public_batch_mint:{quantity:qty}}; 
-        log('Sending...', {qty,funds,fee}); 
-        const res= await client.execute(address,CONTRACT,msg,fee,'mint '+qty,funds); 
-        log('Success',{txhash:res.transactionHash}); 
+        const body = qty===1?{public_mint:{}}:{public_batch_mint:{quantity:qty}};
+        log('Sending...', {qty}); 
+        // PaxiHub path
+        if (window.paxihub && window.paxihub.paxi) {
+          const funds = [{ denom: DENOM, amount: String(PRICE*qty) }];
+          const gas = 350000 * qty;
+          const feeAmount = Math.ceil(gas * 0.05); // 0.05 upaxi per gas
+          const fee = { amount: [{ denom: DENOM, amount: String(feeAmount) }], gas: String(gas) };
+          const msg = {
+            typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+            value: {
+              sender: address,
+              contract: CONTRACT,
+              msg: new TextEncoder().encode(JSON.stringify(body)),
+              funds,
+            }
+          };
+          const txObj = { chainId: CHAIN_ID, msgs: [msg], memo: `mint ${qty}`, fee };
+          const r = await window.paxihub.paxi.signAndSendTransaction(txObj);
+          const txhash = r?.txhash || r?.transactionHash || r?.hash || r?.txHash || '';
+          log('Success',{txhash});
+        } else {
+          // Keplr/CosmJS path
+          if(!client) throw new Error('Connect your wallet first');
+          const funds=coins(PRICE*qty,DENOM); 
+          const fee= calculateFee(350000*qty, GasPrice.fromString('0.05'+DENOM)); 
+          const res= await client.execute(address,CONTRACT,body,fee,'mint '+qty,funds); 
+          log('Success',{txhash:res.transactionHash}); 
+        }
         await refresh(); 
         await loadGallery();
         try { await updateSupply(); } catch {}
