@@ -815,7 +815,9 @@
     const mintBtnEl = document.getElementById('mint1Btn');
     if (mintBtnEl) mintBtnEl.onclick = async ()=>{
       try{
-        if(!client||!address){ toast('Connect your wallet first','error'); return; }
+        const hasPaxi = !!(window.paxihub && window.paxihub.paxi);
+        const hasProvider = !!client || hasPaxi;
+        if(!address || !hasProvider){ toast('Connect your wallet first','error'); return; }
         mintBtnEl.disabled = true; mintBtnEl.textContent = 'Signing...';
         await mint(qtyEl.value);
       } finally {
