@@ -1,0 +1,185 @@
+sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+1.86.0-x86_64-unknown-linux-musl (active, default)
+warning: `/code/.cargo/config` is deprecated in favor of `config.toml`
+note: if you need to support cargo 1.38 or earlier, you can symlink `config` to `config.toml`
+cargo 1.86.0 (adf9b6ad1 2025-02-28)
+Building project /code ...
+Building paxi_pioneers with features {}
+warning: `/code/.cargo/config` is deprecated in favor of `config.toml`
+note: if you need to support cargo 1.38 or earlier, you can symlink `config` to `config.toml`
+    Updating crates.io index
+ Downloading crates ...
+  Downloaded bech32 v0.9.1
+  Downloaded base16ct v0.2.0
+  Downloaded block-buffer v0.10.4
+  Downloaded block-buffer v0.9.0
+  Downloaded cosmwasm-derive v1.5.11
+  Downloaded cw-address-like v1.0.4
+  Downloaded cosmwasm-schema-derive v1.5.11
+  Downloaded cw-ownable-derive v0.5.1
+  Downloaded cosmwasm-schema v1.5.11
+  Downloaded bnum v0.10.0
+  Downloaded cw-ownable v0.5.1
+  Downloaded byteorder v1.5.0
+  Downloaded cw721 v0.18.0
+  Downloaded cosmwasm-storage v1.5.2
+  Downloaded generic-array v0.14.9
+  Downloaded digest v0.9.0
+  Downloaded cfg-if v1.0.4
+  Downloaded rand_core v0.6.4
+  Downloaded cpufeatures v0.2.17
+  Downloaded base64ct v1.8.0
+  Downloaded cw2 v0.16.0
+  Downloaded cw2 v1.1.2
+  Downloaded crypto-common v0.1.6
+  Downloaded cosmwasm-crypto v1.5.11
+  Downloaded zeroize v1.8.2
+  Downloaded static_assertions v1.1.0
+  Downloaded hex v0.4.3
+  Downloaded rfc6979 v0.4.0
+  Downloaded signature v2.2.0
+  Downloaded version_check v0.9.5
+  Downloaded opaque-debug v0.3.1
+  Downloaded subtle v2.6.1
+  Downloaded ahash v0.7.8
+  Downloaded itoa v1.0.15
+  Downloaded cw721 v0.16.0
+  Downloaded cw-utils v0.16.0
+  Downloaded sec1 v0.7.3
+  Downloaded forward_ref v1.0.0
+  Downloaded ff v0.13.1
+  Downloaded semver v1.0.27
+  Downloaded spki v0.7.3
+  Downloaded dyn-clone v1.0.20
+  Downloaded serde_derive_internals v0.29.1
+  Downloaded cw-utils v1.0.3
+  Downloaded group v0.13.0
+  Downloaded thiserror-impl v1.0.69
+  Downloaded rand_core v0.5.1
+  Downloaded pkcs8 v0.10.2
+  Downloaded ed25519-zebra v3.1.0
+  Downloaded sha2 v0.9.9
+  Downloaded schemars_derive v0.8.22
+  Downloaded cw721-base v0.16.0
+  Downloaded thiserror v1.0.69
+  Downloaded cw721-base v0.18.0
+  Downloaded quote v1.0.41
+  Downloaded digest v0.10.7
+  Downloaded serde-json-wasm v0.5.2
+  Downloaded once_cell v1.21.3
+  Downloaded const-oid v0.9.6
+  Downloaded ecdsa v0.16.9
+  Downloaded sha2 v0.10.9
+  Downloaded getrandom v0.2.16
+  Downloaded elliptic-curve v0.13.8
+  Downloaded serde_core v1.0.228
+  Downloaded unicode-ident v1.0.22
+  Downloaded hmac v0.12.1
+  Downloaded ryu v1.0.20
+  Downloaded proc-macro2 v1.0.103
+  Downloaded base64 v0.21.7
+  Downloaded cw-storage-plus v0.16.0
+  Downloaded crypto-bigint v0.5.5
+  Downloaded typenum v1.19.0
+  Downloaded derivative v2.2.0
+  Downloaded serde_derive v1.0.228
+  Downloaded der v0.7.10
+  Downloaded schemars v0.8.22
+  Downloaded hashbrown v0.12.3
+  Downloaded serde v1.0.228
+  Downloaded cw-storage-plus v1.2.0
+  Downloaded memchr v2.7.6
+  Downloaded k256 v0.13.4
+  Downloaded serde_json v1.0.145
+  Downloaded cosmwasm-std v1.5.11
+  Downloaded syn v1.0.109
+  Downloaded syn v2.0.108
+  Downloaded curve25519-dalek v3.2.0
+  Downloaded libc v0.2.177
+   Compiling proc-macro2 v1.0.103
+   Compiling quote v1.0.41
+   Compiling unicode-ident v1.0.22
+   Compiling typenum v1.19.0
+   Compiling serde_core v1.0.228
+   Compiling version_check v0.9.5
+   Compiling syn v1.0.109
+   Compiling serde v1.0.228
+   Compiling serde_json v1.0.145
+   Compiling generic-array v0.14.9
+   Compiling thiserror v1.0.69
+   Compiling memchr v2.7.6
+   Compiling itoa v1.0.15
+   Compiling ryu v1.0.20
+   Compiling schemars v0.8.22
+   Compiling dyn-clone v1.0.20
+   Compiling cfg-if v1.0.4
+   Compiling forward_ref v1.0.0
+   Compiling static_assertions v1.1.0
+   Compiling bnum v0.10.0
+   Compiling base64 v0.21.7
+   Compiling syn v2.0.108
+   Compiling hex v0.4.3
+   Compiling semver v1.0.27
+   Compiling paxi-pioneers v0.1.0 (/code)
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.6
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling serde_derive_internals v0.29.1
+   Compiling serde_derive v1.0.228
+   Compiling thiserror-impl v1.0.69
+   Compiling schemars_derive v0.8.22
+   Compiling derivative v2.2.0
+   Compiling cosmwasm-derive v1.5.11
+   Compiling cosmwasm-schema-derive v1.5.11
+   Compiling cw-ownable-derive v0.5.1
+   Compiling serde-json-wasm v0.5.2
+   Compiling cosmwasm-std v1.5.11
+   Compiling cosmwasm-schema v1.5.11
+   Compiling cw-storage-plus v0.16.0
+   Compiling cw-storage-plus v1.2.0
+   Compiling cw-address-like v1.0.4
+   Compiling cosmwasm-storage v1.5.2
+   Compiling cw2 v1.1.2
+   Compiling cw2 v0.16.0
+   Compiling cw-utils v0.16.0
+   Compiling cw-utils v1.0.3
+   Compiling cw721 v0.16.0
+   Compiling cw721 v0.18.0
+   Compiling cw-ownable v0.5.1
+   Compiling cw721-base v0.16.0
+   Compiling cw721-base v0.18.0
+warning: variable does not need to be mutable
+  --> src/contract.rs:83:5
+   |
+83 |     mut deps: DepsMut,
+   |     ----^^^^
+   |     |
+   |     help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/contract.rs:161:9
+    |
+161 |     let mut resp = Response::new().add_attribute("action", "public_mint");
+    |         ----^^^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused variable: `token_id`
+   --> src/contract.rs:254:33
+    |
+254 |         QueryMsg::RoyaltyInfo { token_id, sale_price } => {
+    |                                 ^^^^^^^^ help: try ignoring the field: `token_id: _`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `paxi-pioneers` (lib) generated 3 warnings (run `cargo fix --lib -p paxi-pioneers` to apply 2 suggestions)
+    Finished `release` profile [optimized] target(s) in 1m 56s
+Optimizing artifacts ...
+Optimizing paxi_pioneers.wasm ...
+Post-processing artifacts...
+914a63f4210fe6b021cdc2437330a10755bd74f6b04391980d8f73f43822bc48  paxi_pioneers.wasm
+Done.

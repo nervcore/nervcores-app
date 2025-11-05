@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paxi Pioneers (Bundel Lokal)</title>
+  <style>
+    /* --- AWAL PERUBAHAN CSS --- */
+    
+    /* Global & Tipografi */
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6; /* Readability */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Header & Navigasi */
+    header {
+      /* Efek Kaca (Glassmorphism) */
+      background: #0d1117e6; 
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #22272f; /* Border lebih halus */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 2px 10px #00000033; /* Bayangan halus */
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 22px;
+      /* Teks Gradien Keren */
+      background: linear-gradient(90deg, #a5b4fc, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+    
+    h3 {
+      font-weight: 600;
+      border-bottom: 1px solid #2a2f36;
+      padding-bottom: 8px;
+    }
+
+    /* Layout & Kartu */
+    .wrap {
+      max-width: 980px;
+      margin: 40px auto;
+      padding: 0 20px; /* Padding di body/wrap, bukan di main */
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d; /* Border sedikit lebih cerah */
+      border-radius: 12px;
+      padding: 24px; /* Padding lebih besar */
+      margin-bottom: 24px;
+      box-shadow: 0 4px 12px #00000022; /* Bayangan kartu */
+    }
+
+    .row {
+      display: flex;
+      gap: 16px; /* Spasi lebih besar */
+      align-items: center;
+      margin-bottom: 16px; /* Ganti margin atas/bawah */
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .row:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Tombol & Interaksi */
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease; /* Transisi untuk semua properti */
+    }
+
+    button:hover {
+      background: #30363d;
+      border-color: #40464d;
+      transform: translateY(-1px); /* Efek angkat */
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.primary, .wallet-btn {
+      background: linear-gradient(45deg, #2563eb, #3b82f6);
+      border: none;
+      color: white;
+      box-shadow: 0 2px 8px #3b82f644;
+    }
+
+    button.primary:hover, .wallet-btn:hover {
+      background: linear-gradient(45deg, #3b82f6, #60a5fa);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px #3b82f666;
+    }
+
+    /* Input Form */
+    input[type="number"] {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #30363d;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 15px;
+      transition: all 0.2s ease;
+      width: 80px;
+    }
+    
+    input[type="number"]:focus {
+      /* Efek focus yang jelas */
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px #3b82f633;
+    }
+
+    .muted {
+      color: #8ea1c0;
+      font-size: 14px;
+    }
+
+    pre {
+      background: #0d1117;
+      border: 1px solid #2a2f36;
+      color: #c9d1d9;
+      padding: 12px;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    /* Log spacing: compact but with small breathing space */
+    pre#log { background: transparent; border: 0; padding: 6px 0 8px; margin: 0; line-height: 1; }
+
+    /* Wallet Dropdown */
+    .wallet {
+      position: relative;
+    }
+    
+    .wallet-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      margin-top: 8px;
+      /* Efek Kaca */
+      background: #161b22cc;
+      backdrop-filter: blur(8px);
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      min-width: 180px;
+      z-index: 30;
+      box-shadow: 0 4px 20px #00000044;
+    }
+
+    .wallet-menu button {
+      border: none;
+      background: none;
+      width: 100%;
+      padding: 12px 16px;
+      text-align: left;
+      color: #e6edf3;
+      font-weight: 500;
+      border-radius: 0;
+      transition: background 0.2s ease;
+    }
+
+    .wallet-menu button:hover {
+      background: #3b82f644; /* Hover dengan warna aksen */
+      color: #fff;
+      transform: none;
+    }
+    
+    .wallet.open .wallet-menu {
+      display: block;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* NFT Gallery */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+    .nft {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+      transition: all 0.2s ease-in-out; /* Transisi untuk hover */
+      box-shadow: 0 2px 4px #00000022;
+    }
+    
+    .nft:hover {
+      /* Efek Pop-out Keren */
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 8px 16px #00000044;
+      border-color: #3b82f6;
+    }
+
+    .nft img {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      display: block;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .nft p {
+      margin: 0;
+      padding: 12px 8px;
+      font-size: 13px;
+      color: #e6edf3; /* Dibuat lebih cerah */
+      font-weight: 600;
+      text-align: center;
+      word-break: break-all;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: #8ea1c0;
+      border-top: 1px solid #22272f;
+      background: #0d1117; /* Samakan dengan body */
+      margin-top: 40px;
+    }
+
+    /* --- AKHIR PERUBAHAN CSS --- */
+    /* Tambahan style untuk hero, stepper, dan progress */
+    :root { --stroke:#263042; --accent:#6b5bff; --accent2:#3ab7ff; }
+    .hero { margin: 32px auto 24px; padding: 28px; border:1px solid var(--stroke); border-radius:20px; background: radial-gradient(100% 120% at 0% 0%, #1a2140 0%, #0d1117 60%); text-align:center; box-shadow:0 8px 40px #0006; }
+    .hero h1 { margin:0 0 8px; font-size:40px; font-weight:800; letter-spacing:.2px; color:#e8ecff; }
+    .hero p { margin:0; color:#b6c4e3; }
+    .stepper { display:flex; align-items:center; gap:10px; border:1px solid #2a2f36; background:#0f141e; padding:8px; border-radius:16px; }
+    .stepper button { width:36px; height:36px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:#1b2230; border:1px solid #2a2f36; color:#e6edf3; }
+    .stepper input { width:72px; text-align:center; background:transparent; border:none; color:#e6edf3; }
+    .progress { height:10px; border-radius:999px; background:#1b2436; border:1px solid #2a3550; overflow:hidden; }
+    .progress > .fill { height:100%; width:0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .4s ease; }
+    /* Status + toast */
+    .status-card { background:#0f141e; border:1px solid #273046; border-radius:12px; padding:2px 6px; color:#cfe1ff; line-height:1; }
+    .status-title { font-weight:700; margin:0; display:flex; align-items:center; gap:8px; }
+    .status-title .ico { width:16px; height:16px; display:inline-block; border-radius:50%; }
+    .ico-success { background: #22c55e; box-shadow: 0 0 0 2px #22c55e22; }
+    .ico-error { background: #ef4444; box-shadow: 0 0 0 2px #ef444422; }
+    .ico-info { background: #60a5fa; box-shadow: 0 0 0 2px #60a5fa22; }
+    .ico-pending { background: #eab308; box-shadow: 0 0 0 2px #eab30822; }
+    .status-sub { margin:0; color:#97aacb; font-size:12px; }
+    .status-actions { display:flex; gap:10px; flex-wrap:wrap; margin:0; }
+    .status-actions:empty { display:none; }
+    .status-sub:empty { display:none; }
+    .btn-link { background:#1b2230; border:1px solid #2a2f36; color:#d6e3ff; border-radius:8px; padding:6px 10px; cursor:pointer; font-size:12px; }
+    /* details removed (no longer shown) */
+    .toast-wrap { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; gap:8px; z-index:50; }
+    .toast { display:flex; align-items:center; gap:10px; background:#0f141e; color:#d6e3ff; border:1px solid #2b3550; border-radius:10px; padding:10px 12px; box-shadow:0 6px 20px #0008; font-size:13px; min-width:260px; opacity:0; transform:translateY(8px); }
+    .toast .ico { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .toast.success .ico { background:#22c55e; box-shadow:0 0 0 2px #22c55e33; }
+    .toast.error .ico { background:#ef4444; box-shadow:0 0 0 2px #ef444433; }
+    .toast.info .ico { background:#60a5fa; box-shadow:0 0 0 2px #60a5fa33; }
+    .toast.pending .ico { background:#eab308; box-shadow:0 0 0 2px #eab30833; }
+    /* Animations */
+    @keyframes toastIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(8px); } }
+    .toast.show { animation: toastIn 200ms ease-out forwards; }
+    .toast.hide { animation: toastOut 200ms ease-in forwards; }
+    /* Showcase: constrain image inside a fixed square frame */
+    .showcase { display:flex; justify-content:center; margin:24px 0 14px; }
+    .showcase .frame { width: min(420px, 100%); aspect-ratio: 1/1; border:1px solid #2a2f36; border-radius:14px; overflow:hidden; background: linear-gradient(180deg,#121a30,#0f1628); box-shadow: 0 6px 20px #0004; position:relative; }
+    .showcase .frame img { width:100%; height:100%; object-fit: cover; display:block; }
+    .showcase .badge { position:absolute; top:8px; left:8px; background:#1f2a48; color:#cfe1ff; border:1px solid #2a3758; font-size:12px; padding:4px 8px; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Paxi Pioneers</h2>
+    <div class="wallet" id="walletBox">
+      <button id="connectBtn" class="wallet-btn">Connect Wallet</button>
+      <div class="wallet-menu" id="walletMenu">
+        <button id="copyBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px">
+            <rect x="9" y="9" width="12" height="12" rx="2" stroke="#9fb4db" stroke-width="2"/>
+            <rect x="3" y="3" width="12" height="12" rx="2" stroke="#9fb4db" stroke-width="2"/>
+          </svg>
+          Copy Address
+        </button>
+        <button id="disconnectBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px">
+            <path d="M15 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h9" stroke="#ff6969" stroke-width="2"/>
+            <path d="M10 17l5-5-5-5" stroke="#ff6969" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Disconnect
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- Hero section -->
+    <div class="hero">
+      <h1>Join the Paxi Pioneers</h1>
+      <p>Mint a Pioneer NFT and claim your spot in the galactic frontier. Limited to 10,000 unique explorers.</p>
+    </div>
+    <div class="card">
+      <div class="showcase">
+        <div class="frame">
+          <img id="showcaseImg" alt="NFT preview" />
+          <span class="badge">Preview</span>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Quantity</label><br>
+          <div class="stepper">
+            <button type="button" id="qtyMinus">−</button>
+            <input id="qty" type="number" min="1" max="10" value="1" />
+            <button type="button" id="qtyPlus">+</button>
+          </div>
+        </div>
+        <div>
+          <button id="mint1Btn" class="primary">Mint</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="progress" style="flex:1; max-width:360px;">
+          <div class="fill" id="progressFill"></div>
+        </div>
+        <span id="supply" class="muted"></span>
+      </div>
+      <div class="row" id="adminRow" style="display:none">
+        <div class="muted">Admin Controls</div>
+        <div>
+          <button id="unpauseBtn">Unpause</button>
+          <button id="pauseBtn">Pause</button>
+          <button id="withdrawBtn">Withdraw</button>
+        </div>
+      </div>
+      <pre id="log"></pre>
+    </div>
+
+    <div class="card">
+      <h3>NFT Gallery</h3>
+      <div id="gallery" class="gallery">
+        <p class="muted">No NFTs yet.</p>
+      </div>
+    </div>
+    <!-- Panel Kontrol Admin: tersembunyi default, muncul jika wallet == admin -->
+    <div class="card" id="adminPanel" style="display: none;">
+      <h3>Admin Controls</h3>
+      <p>Saldo: <span id="balanceDisplay">...</span></p>
+      <div class="row">
+        <button id="withdrawButton">Withdraw Funds</button>
+        <button id="pauseButton">Pause Mint</button>
+        <button id="unpauseButton">Unpause Mint</button>
+      </div>
+      <div class="row">
+        <div>
+          <label>Update Base URI</label><br>
+          <input id="uriInput" type="text" placeholder="ipfs://.../" style="min-width:320px" />
+          <button id="updateUriButton">Update Base URI</button>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Set Provenance Hash</label><br>
+          <input id="hashInput" type="text" placeholder="sha256..." style="min-width:320px" />
+          <button id="setHashButton">Set Provenance Hash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    © 2025 Paxi Pioneers • Built with ❤️ by the Paxi community
+  </footer>
+
+  <script src="bundle.js"></script>
+  <script>
+    // Placeholder explorer base (easy to replace later)
+    const EXPLORER_BASE = 'https://explorer.placeholder/tx/';
+    const TOAST_TTL = 4200;
+    const toastWrap = document.createElement('div'); toastWrap.className='toast-wrap'; document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(toastWrap));
+    const toast = (msg, type='info')=>{
+      const el=document.createElement('div');
+      el.className='toast '+type+' show';
+      el.innerHTML=`<span class="ico"></span><span>${msg}</span>`;
+      toastWrap.appendChild(el);
+      const hideDelay = Math.max(150, TOAST_TTL - 180);
+      setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); }, hideDelay);
+      setTimeout(()=>{ el.remove(); }, hideDelay + 200);
+    };
+    // UI labels now in English
+    const CONTRACT = 'paxi1rnraxu54huv7wkmpff3v8mzhqh49g0e60x4ehzws4ee6upcy78sqc55vx0';
+    const RPC = 'https://testnet-rpc.paxinet.io';
+    const LCD = 'https://testnet-lcd.paxinet.io';
+    const CHAIN_ID = 'paxi-testnet';
+    const DENOM = 'upaxi';
+    const PRICE = 10_000_000;
+    // Showcase image (square 1:1) seeded with provided address
+    const SHOWCASE_IMG = 'https://picsum.photos/seed/paxi1gjdeln3vmga8un3ru95fnays48etf6c3hgamga/960/960';
+
+    const { SigningCosmWasmClient, GasPrice, calculateFee, coins } = window.Cosm;
+    // Set showcase image src on load
+    (function(){ const el=document.getElementById('showcaseImg'); if(el) el.src = SHOWCASE_IMG; })();
+    // Ensure gallery images have robust fallback
+    function bindGalleryImageFallback(){
+      document.querySelectorAll('#gallery img[data-token]').forEach(img=>{
+        img.onerror = ()=>{
+          const t = img.getAttribute('data-token')||'paxi';
+          img.onerror=null; img.src = `https://picsum.photos/seed/${t}/400/400`;
+        };
+      });
+    }
+    const logEl = document.getElementById('log');
+    const supplyEl = document.getElementById('supply');
+    const qtyEl = document.getElementById('qty');
+    const galleryEl = document.getElementById('gallery');
+    const adminRow = document.getElementById('adminRow');
+    const unpauseBtn = document.getElementById('unpauseBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const withdrawBtn = document.getElementById('withdrawBtn');
+    // Admin Panel elements
+    const adminPanel = document.getElementById('adminPanel');
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    const withdrawButton = document.getElementById('withdrawButton');
+    const pauseButton = document.getElementById('pauseButton');
+    const unpauseButton = document.getElementById('unpauseButton');
+    const uriInput = document.getElementById('uriInput');
+    const updateUriButton = document.getElementById('updateUriButton');
+    const hashInput = document.getElementById('hashInput');
+    const setHashButton = document.getElementById('setHashButton');
+    let client=null, address=null;
+    let adminAddress=null, paused=false, maxSupply=10000;
+    function shortHash(h){ if(!h) return ''; return h.slice(0,8)+'…'+h.slice(-8); }
+    function mapError(e){ const msg=(e?.message||'').toLowerCase();
+      if(msg.includes('paused')) return 'Mint is currently paused by Admin.';
+      if(msg.includes('invalid payment')) return 'Payment amount is invalid (price is 10 PAXI per NFT).';
+      if(msg.includes('max supply')) return 'Max supply reached. No more mints available.';
+      if(msg.includes('invalid quantity')||msg.includes('quantity')) return 'Quantity must be between 1 and 10.';
+      if(msg.includes('request rejected')||msg.includes('rejected')) return 'Signature request was cancelled.';
+      if(msg.includes('network')||msg.includes('lcd')||msg.includes('rpc')) return 'Network is busy. Please retry shortly.';
+      return e?.message||'Unknown error.';
+    }
+    function linkTx(tx){ return EXPLORER_BASE ? (EXPLORER_BASE+tx) : '#'; }
+    function setStatus(kind, title, sub, opts){
+      const tx=opts?.txhash, raw=opts?.raw;
+      const ico = kind==='success'?'ico-success': kind==='error'?'ico-error': kind==='pending'?'ico-pending':'ico-info';
+      const html=`<div class="status-card">
+        <div class="status-title"><span class="ico ${ico}"></span>${title||''}</div>
+        <div class="status-sub">${sub||''}</div>
+        <div class="status-actions">
+          ${tx?`<a class="btn-link" href="${linkTx(tx)}" target="_blank" rel="noreferrer">View in Explorer</a>`:''}
+          ${tx?`<button class="btn-link" id="copyTxBtn">Copy TX Hash (${shortHash(tx)})</button>`:''}
+        </div>
+      </div>`;
+      logEl.innerHTML=html;
+      const cpy=logEl.querySelector('#copyTxBtn');
+      if(cpy&&tx){ cpy.onclick=()=>{ navigator.clipboard.writeText(tx); toast('TX hash copied'); }; }
+    }
+    // Log policy: only show TX hash in the status card; others as toasts
+    const log=(m,o)=>{
+      const mm=(m||'').toLowerCase();
+      if(mm.startsWith('connected')){ toast('Wallet connected','success'); return; }
+      if(mm.startsWith('failed to connect')){ toast('Failed to connect','error'); return; }
+      if(mm.startsWith('disconnected')){ toast('Disconnected from wallet','info'); return; }
+      if(mm.startsWith('sending')){ toast('Sending...','pending'); return; }
+      if(mm.startsWith('success')){ const tx=o?.txhash; setStatus('success','Mint successful','', { txhash:tx }); toast('Mint success','success'); return; }
+      if(mm.startsWith('mint error')){ toast(mapError(o||m),'error'); return; }
+      if(mm.startsWith('admin error')){ toast(mapError(o||m),'error'); return; }
+      // fallback: ignore or show minimal
+    };
+
+    const lcdSmart = (q)=> fetch(`${LCD}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart/${btoa(JSON.stringify(q))}`)
+      .then(r=>{ if(!r.ok) throw new Error('LCD '+r.status); return r.json(); })
+      .then(js=>{ const b64=js.data||js.result||js.smart||js.result_data||js.response?.data;
+        if(!b64) return js;
+        const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+        try{ return JSON.parse(new TextDecoder().decode(bytes)); }catch{return{};}
+      });
+
+    async function getConfig(){
+      try { return await lcdSmart({ get_config: {} }); } catch { return null; }
+    }
+
+    async function refresh(){ 
+      try{ 
+        const [rSupply, cfg] = await Promise.all([
+          lcdSmart({num_tokens:{}}).catch(()=>null),
+          getConfig()
+        ]);
+        const minted = Number((rSupply && (rSupply.count||rSupply)) || 0);
+        if (cfg) {
+          maxSupply = Number(cfg.max_supply || maxSupply);
+          adminAddress = cfg.admin || null;
+          paused = !!cfg.paused;
+        }
+        supplyEl.textContent=`${minted} / ${maxSupply} MINTED`; 
+        // Toggle admin controls safely
+        const isAdmin = !!address && !!adminAddress && address === adminAddress;
+        if (adminRow) adminRow.style.display = isAdmin ? '' : 'none';
+        // Pastikan panel admin ikut diperbarui
+        await checkAdminAndTogglePanel();
+      }catch{ 
+        supplyEl.textContent='Supply: --'; 
+        if (adminRow) adminRow.style.display='none';
+      } 
+    }
+
+    async function connect(){
+      try{
+        if(!window.keplr) throw new Error('Keplr not found');
+        await window.keplr.enable(CHAIN_ID);
+        const signer = window.keplr.getOfflineSignerAuto ? await window.keplr.getOfflineSignerAuto(CHAIN_ID): await window.keplr.getOfflineSigner(CHAIN_ID);
+        client = await SigningCosmWasmClient.connectWithSigner(RPC, signer, { prefix:'paxi', gasPrice: GasPrice.fromString('0.05'+DENOM) });
+        const acc = await signer.getAccounts(); 
+        address = acc[0].address; 
+        log('Connected', { address });
+        document.getElementById('connectBtn').textContent = address.slice(0,6)+'...'+address.slice(-4);
+        document.getElementById('walletBox').classList.add('open');
+        await refresh(); 
+        await loadGallery();
+        try { await updateSupply(); } catch {}
+        try { await fetchGallery(); } catch {}
+        await checkAdminAndTogglePanel();
+      }catch(e){ log('Failed to connect: '+e.message); }
+    }
+
+    async function disconnect(){
+      client = null;
+      address = null;
+      document.getElementById('connectBtn').textContent = 'Connect Wallet';
+      document.getElementById('walletBox').classList.remove('open');
+      galleryEl.innerHTML = '<p class="muted">No NFTs yet.</p>';
+      log('Disconnected from wallet.');
+    }
+
+    async function mint(qty){ 
+      try{ 
+        if(!client||!address) throw new Error('Connect your wallet first'); 
+        qty=Math.max(1,Math.min(10,Number(qty)||1)); 
+        const funds=coins(PRICE*qty,DENOM); 
+        const fee= calculateFee(350000*qty, GasPrice.fromString('0.05'+DENOM)); 
+        const msg= qty===1?{public_mint:{}}:{public_batch_mint:{quantity:qty}}; 
+        log('Sending...', {qty,funds,fee}); 
+        const res= await client.execute(address,CONTRACT,msg,fee,'mint '+qty,funds); 
+        log('Success',{txhash:res.transactionHash}); 
+        await refresh(); 
+        await loadGallery();
+        try { await updateSupply(); } catch {}
+        try { await fetchGallery(); } catch {}
+      }catch(e){ log('Mint error: '+e.message); } 
+    }
+
+    async function loadGallery(){
+      if(!address) return;
+      galleryEl.innerHTML = '<p class="muted">Loading your NFTs...</p>';
+      try {
+        const res = await lcdSmart({ tokens: { owner: address, limit: 20 }});
+        const tokens = res.tokens || [];
+        if (!tokens.length) { 
+          galleryEl.innerHTML = '<p class="muted">No NFTs yet.</p>'; 
+          return; 
+        }
+        galleryEl.innerHTML = tokens.map(t=>`
+          <div class="nft">
+            <img data-token="${t}" src="https://api.paxinet.io/nft/${t}.png" alt="${t}">
+            <p>${t}</p>
+          </div>
+        `).join('');
+        bindGalleryImageFallback();
+      } catch {
+        galleryEl.innerHTML = '<p class="muted">Failed to load NFTs.</p>';
+      }
+    }
+
+    // Fungsi baru: updateSupply() menampilkan "[count] / 10000 MINTED"
+    async function updateSupply(){
+      try {
+        let count = 0;
+        if (client) {
+          try {
+            const res = await client.queryContractSmart(CONTRACT, { num_tokens: {} });
+            count = Number(res?.count ?? res ?? 0);
+          } catch {}
+        }
+        if (!count) {
+          const r = await lcdSmart({ num_tokens: {} });
+          count = Number(r?.count ?? r ?? 0);
+        }
+        const max = Number(maxSupply || 10000);
+        supplyEl.textContent = `${count} / ${max} MINTED`;
+      } catch {}
+    }
+
+    // Fungsi baru: fetchGallery() mengambil tokens dan metadata via nft_info + token_uri
+    async function fetchGallery(){
+      if (!address) return;
+      galleryEl.innerHTML = '<p class="muted">Loading collection...</p>';
+      try {
+        // Ambil daftar token milik pengguna
+        let tokens = [];
+        if (client) {
+          try {
+            const r = await client.queryContractSmart(CONTRACT, { tokens: { owner: address, limit: 30 } });
+            tokens = r?.tokens || [];
+          } catch {}
+        }
+        if (!tokens.length) {
+          const r = await lcdSmart({ tokens: { owner: address, limit: 30 } });
+          tokens = r?.tokens || [];
+        }
+
+        if (!tokens.length) {
+          galleryEl.innerHTML = '<p class="muted">Your collection is empty.</p>';
+          return;
+        }
+
+        const toHttp = (uri) => {
+          if (!uri) return '';
+          return uri.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + uri.slice('ipfs://'.length) : uri;
+        };
+
+        const cards = [];
+        for (const tokenId of tokens) {
+          let tokenUri = '';
+          try {
+            let info;
+            if (client) {
+              try { info = await client.queryContractSmart(CONTRACT, { nft_info: { token_id: tokenId } }); } catch {}
+            }
+            if (!info) { info = await lcdSmart({ nft_info: { token_id: tokenId } }); }
+            tokenUri = info?.token_uri || '';
+          } catch {}
+
+          let name = tokenId;
+          let image = '';
+          const metaUrl = toHttp(tokenUri);
+          if (metaUrl) {
+            try {
+              const resp = await fetch(metaUrl);
+              const ct = resp.headers.get('content-type') || '';
+              if (ct.includes('application/json')) {
+                const meta = await resp.json();
+                if (meta?.name) name = meta.name;
+                if (meta?.image) image = toHttp(meta.image);
+              } else if (ct.startsWith('image/')) {
+                image = metaUrl;
+              }
+            } catch {}
+          }
+          if (!image) image = `https://api.paxinet.io/nft/${tokenId}.png`;
+          cards.push(`
+            <div class=\"nft\">\n              <img src=\"${image}\" alt=\"${name}\">\n              <p>${name}</p>\n            </div>
+          `);
+        }
+        galleryEl.innerHTML = cards.join('');
+        bindGalleryImageFallback();
+      } catch {
+        galleryEl.innerHTML = '<p class="muted">Failed to load NFTs.</p>';
+      }
+    }
+
+    // ---- Admin Panel helpers ----
+    async function queryGetConfig(){
+      try { return await lcdSmart({ get_config: {} }); } catch { return null; }
+    }
+
+    async function fetchContractBalance(){
+      try {
+        const r = await fetch(`${LCD}/cosmos/bank/v1beta1/balances/${CONTRACT}/by_denom?denom=${DENOM}`);
+        if (!r.ok) return 0;
+        const js = await r.json();
+        const amt = js?.balance?.amount ? Number(js.balance.amount) : 0;
+        return amt;
+      } catch { return 0; }
+    }
+
+    async function updateBalanceDisplay(){
+      if (!balanceDisplay) return;
+      const amt = await fetchContractBalance();
+      balanceDisplay.textContent = `${amt} ${DENOM}`;
+    }
+
+    async function checkAdminAndTogglePanel(){
+      try {
+        let cfg = null;
+        // Coba query via client (lebih andal dibanding decode LCD)
+        if (client) {
+          try { cfg = await client.queryContractSmart(CONTRACT, { get_config: {} }); } catch {}
+        }
+        if (!cfg) { cfg = await queryGetConfig(); }
+        const connected = (address||'').trim().toLowerCase();
+        const adminAddr = (cfg?.admin||'').trim().toLowerCase();
+        // simpan juga ke variabel global untuk guard execAdmin
+        adminAddress = cfg?.admin || null;
+        const isAdmin = !!connected && !!adminAddr && connected === adminAddr;
+        if (adminPanel) adminPanel.style.display = isAdmin ? 'block' : 'none';
+        if (isAdmin) await updateBalanceDisplay();
+      } catch {}
+    }
+
+    async function execAdmin(msg, memo){
+      try{
+        if(!client||!address) throw new Error('Hubungkan wallet terlebih dahulu');
+        if(!adminAddress || address !== adminAddress) throw new Error('Bukan admin');
+        const fee = calculateFee(400000, GasPrice.fromString('0.05'+DENOM));
+        log('Mengirim...', { msg, fee });
+        const res = await client.execute(address, CONTRACT, msg, fee, memo);
+        log('Sukses', { txhash: res.transactionHash });
+        await refresh();
+        await updateBalanceDisplay();
+      }catch(e){ log('Admin error: '+e.message); }
+    }
+
+    // Event handlers
+    document.getElementById('connectBtn').onclick = connect;
+    const mintBtnEl = document.getElementById('mint1Btn');
+    if (mintBtnEl) mintBtnEl.onclick = async ()=>{
+      try{
+        if(!client||!address){ toast('Connect your wallet first','error'); return; }
+        mintBtnEl.disabled = true; mintBtnEl.textContent = 'Signing...';
+        await mint(qtyEl.value);
+      } finally {
+        mintBtnEl.disabled = false; updateMintBtn();
+      }
+    };
+    // Dynamic English label: Mint N Pioneers • X PAXI
+    function updateMintBtn(){ const q = Math.max(1, Math.min(10, parseInt(qtyEl.value||'1',10))); const total = q*10; if(mintBtnEl) mintBtnEl.textContent = `Mint ${q} Pioneer${q>1?'s':''} • ${total} PAXI`; }
+    updateMintBtn();
+    // tombol refresh suplai dihapus; suplai kini otomatis diperbarui
+    document.getElementById('copyBtn').onclick=()=>{ if(address){ navigator.clipboard.writeText(address); toast('Address copied','success'); } };
+    document.getElementById('disconnectBtn').onclick=disconnect;
+    // Auto-close wallet dropdown when clicking outside or pressing ESC
+    (function(){
+      const box = document.getElementById('walletBox');
+      const menu = document.getElementById('walletMenu');
+      document.addEventListener('click', (e)=>{
+        if(!box.classList.contains('open')) return;
+        if(box.contains(e.target)) return; // click inside wallet area
+        box.classList.remove('open');
+      });
+      document.addEventListener('keydown', (e)=>{
+        if(e.key==='Escape') box.classList.remove('open');
+      });
+    })();
+    if (unpauseBtn) unpauseBtn.onclick=()=>execAdmin({ unpause_mint: {} }, 'unpause');
+    if (pauseBtn) pauseBtn.onclick=()=>execAdmin({ pause_mint: {} }, 'pause');
+    if (withdrawBtn) withdrawBtn.onclick=()=>execAdmin({ withdraw: {} }, 'withdraw');
+    // Bind new Admin Panel buttons
+    if (withdrawButton) withdrawButton.onclick=()=>execAdmin({ withdraw: {} }, 'withdraw');
+    if (pauseButton) pauseButton.onclick=()=>execAdmin({ pause_mint: {} }, 'pause');
+    if (unpauseButton) unpauseButton.onclick=()=>execAdmin({ unpause_mint: {} }, 'unpause');
+    if (updateUriButton) updateUriButton.onclick=()=>{
+      const base_uri = (uriInput?.value||'').trim();
+      if(!base_uri) return alert('Base URI kosong');
+      return execAdmin({ update_base_uri: { base_uri } }, 'update base uri');
+    };
+    if (setHashButton) setHashButton.onclick=()=>{
+      const hash = (hashInput?.value||'').trim();
+      if(!hash) return alert('Hash kosong');
+      return execAdmin({ set_provenance_hash: { hash } }, 'set provenance');
+    };
+
+    // Stepper controls untuk qty (+/-) tanpa mengubah fungsi mint
+    (function(){
+      const minus = document.getElementById('qtyMinus');
+      const plus = document.getElementById('qtyPlus');
+      if(minus) minus.onclick = ()=>{ const v=Math.max(1, Math.min(10, (parseInt(qtyEl.value||'1',10)-1))); qtyEl.value=v; updateMintBtn(); };
+      if(plus) plus.onclick = ()=>{ const v=Math.max(1, Math.min(10, (parseInt(qtyEl.value||'1',10)+1))); qtyEl.value=v; updateMintBtn(); };
+      qtyEl.addEventListener('input', updateMintBtn);
+    })();
+
+    // Sinkronkan progress bar dengan teks supply
+    (function(){
+      const fill = document.getElementById('progressFill');
+      if(!fill || !supplyEl) return;
+      const update = ()=>{
+        const m = (supplyEl.textContent||'').match(/(\d+)\s*\/\s*(\d+)/);
+        if(!m) return; const cur=Number(m[1]||0), max=Number(m[2]||0); if(!max) return; fill.style.width = Math.min(100, Math.round((cur/max)*100))+'%';
+      };
+      const obs = new MutationObserver(update);
+      obs.observe(supplyEl, { childList:true, characterData:true, subtree:true });
+      update();
+    })();
+
+    refresh();
+    // panggil updateSupply saat awal
+    try { updateSupply(); } catch {}
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Abaikan folder build Rust
+/target/
+
+# Abaikan dependensi frontend
+/paxi-mint-frontend/node_modules/
+
+# Abaikan build cache Rust
+/.cargo/
+
+# (Opsional tapi sangat disarankan)
+# Abaikan file environment/rahasia
+*.env
+.env
