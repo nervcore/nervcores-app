@@ -343,10 +343,10 @@
     <div class="card">
       <div class="showcase">
         <div class="frame">
-          <img id="showcaseImg" alt="NFT preview" />
-          
+          <img id="showcaseImg" alt="Pioneer" loading="lazy" decoding="async" />
         </div>
       </div>
+      
       <div class="row" style="align-items:flex-end; justify-content:space-between;">
         <div style="display:flex; flex-direction:column; gap:6px;">
           <label style="margin:0; font-weight:600; color:#cfe1ff;">Quantity</label>
@@ -469,11 +469,35 @@
     const DENOM = 'upaxi';
     const PRICE = 10_000_000;
     // Showcase image (square 1:1) seeded with provided address
-    const SHOWCASE_IMG = 'https://picsum.photos/seed/paxi1gjdeln3vmga8un3ru95fnays48etf6c3hgamga/960/960';
+    // Ganti ke CID IPFS Anda di Pinata; proxy ke WebP 512x512 agar ringan
+    const SHOWCASE_IMG_ORIG = 'https://gateway.pinata.cloud/ipfs/bafybeibyndyoxo5mv3ki32r3sg4w35rottg445pcjkcgciuaecdyrb6al4';
+    const SHOWCASE_IMG = 'https://images.weserv.nl/?url=' + encodeURIComponent(SHOWCASE_IMG_ORIG) + '&w=512&h=512&fit=cover&output=webp&q=72&we&il';
+    // Optional: Pioneer game image (original URL), we will proxy + downscale to WebP for speed
+    const SHOWCASE_GAME_IMG = '/paxi-mint-frontend/assets/pioneer-game.svg';
 
     const { SigningCosmWasmClient, GasPrice, calculateFee, coins } = window.Cosm;
     // Set showcase image src on load
-    (function(){ const el=document.getElementById('showcaseImg'); if(el) el.src = SHOWCASE_IMG; })();
+    (function(){ const el=document.getElementById('showcaseImg'); if(!el) return; el.src = SHOWCASE_IMG; el.width=512; el.height=512; })();
+    // Set game showcase with optimized delivery (WebP, 512x512) using images.weserv.nl proxy
+    (function(){
+      if (!SHOWCASE_GAME_IMG) return; // no game image configured
+      const wrap = document.getElementById('gameShowcase');
+      const img = document.getElementById('gameSrc');
+      const webp = document.getElementById('gameSrcWebp');
+      // Build optimized URLs (cover 1:1, width/height capped to 512)
+      // If local SVG, use as-is (already lightweight); else proxy to optimized WebP
+      if (SHOWCASE_GAME_IMG.endsWith('.svg')) {
+        if (img) img.src = SHOWCASE_GAME_IMG;
+      } else {
+        const base = 'https://images.weserv.nl/?url=' + encodeURIComponent(SHOWCASE_GAME_IMG);
+        const params = '&w=512&h=512&fit=cover&output=webp&we&il'; // webp progressive
+        const webpUrl = base + params;
+        const fallbackUrl = base + '&w=512&h=512&fit=cover';
+        if (webp) webp.srcset = webpUrl;
+        if (img) img.src = fallbackUrl;
+      }
+      if (wrap) wrap.style.display = '';
+    })();
     // Helpers untuk PaxiHub signing ala PAXI Sender
     function toB64(bytes){ try{ let bin=''; bytes.forEach(b=> bin+=String.fromCharCode(b)); return btoa(bin); }catch{ return ''; } }
     function fromB64(str){ try{ const bin=atob(str); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }catch{ return new Uint8Array(); } }
