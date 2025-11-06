@@ -617,22 +617,18 @@
         log('Sending...', {qty}); 
         // PaxiHub path
         if (window.paxihub && window.paxihub.paxi) {
+          const P = window.PaxiCosmJS; if(!P) throw new Error('PaxiCosmJS not ready');
           const funds = [{ denom: DENOM, amount: String(PRICE*qty) }];
           const gas = 350000 * qty;
           const feeAmount = Math.ceil(gas * 0.05); // 0.05 upaxi per gas
           const fee = { amount: [{ denom: DENOM, amount: String(feeAmount) }], gas: String(gas) };
-          const msg = {
-            typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
-            value: {
-              sender: address,
-              contract: CONTRACT,
-              msg: new TextEncoder().encode(JSON.stringify(body)),
-              funds,
-            }
-          };
-          const txObj = { chainId: CHAIN_ID, msgs: [msg], memo: `mint ${qty}`, fee };
+          const bodyBytes = new TextEncoder().encode(JSON.stringify(body));
+          const exec = P.MsgExecuteContract.fromPartial({ sender: address, contract: CONTRACT, msg: bodyBytes, funds });
+          const anyMsg = P.Any.fromPartial({ typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract', value: P.MsgExecuteContract.encode(exec).finish() });
+          const txObj = { chainId: CHAIN_ID, msgs: [anyMsg], memo: `mint ${qty}`, fee };
           const r = await window.paxihub.paxi.signAndSendTransaction(txObj);
           const txhash = r?.txhash || r?.transactionHash || r?.hash || r?.txHash || '';
+          if (!txhash) throw new Error(r?.error || 'Unknown error');
           log('Success',{txhash});
         } else {
           // Keplr/CosmJS path
