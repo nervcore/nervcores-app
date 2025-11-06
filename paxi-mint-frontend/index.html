@@ -298,6 +298,11 @@
     .chooser-btn { flex:1; padding:12px 14px; border-radius:10px; border:1px solid #2a2f36; background:#1a2452; color:#fff; cursor:pointer; font-weight:700; text-align:center; }
     .chooser-btn.secondary { background:#1b2230; color:#d6e3ff; }
     .chooser-close { margin-top:10px; display:block; width:100%; text-align:center; color:#9fb4db; cursor:pointer; font-size:12px; }
+    /* Network badge */
+    /* (removed net-badge in header to avoid clutter) */
+    /* Debug panel */
+    .debug-card { background:#0f141e; border:1px solid #273046; border-radius:12px; padding:10px; color:#cfe1ff; }
+    .debug-card pre { margin:8px 0 0; background:#0b122b; border:1px solid rgba(255,255,255,.10); border-radius:8px; padding:8px; font-size:12px; max-height:32vh; overflow:auto; }
     /* Showcase: constrain image inside a fixed square frame */
     .showcase { display:flex; justify-content:center; margin:24px 0 14px; }
     .showcase .frame { width: min(420px, 100%); aspect-ratio: 1/1; border:1px solid #2a2f36; border-radius:14px; overflow:hidden; background: linear-gradient(180deg,#121a30,#0f1628); box-shadow: 0 6px 20px #0004; position:relative; }
@@ -339,7 +344,7 @@
       <div class="showcase">
         <div class="frame">
           <img id="showcaseImg" alt="NFT preview" />
-          <span class="badge">Preview</span>
+          
         </div>
       </div>
       <div class="row" style="align-items:flex-end; justify-content:space-between;">
@@ -361,6 +366,7 @@
         </div>
         <span id="supply" class="muted"></span>
       </div>
+      
       <div class="row" id="adminRow" style="display:none">
         <div class="muted">Admin Controls</div>
         <div>
@@ -370,6 +376,13 @@
         </div>
       </div>
       <pre id="log"></pre>
+      <div class="debug-card" id="debugCard" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;justify-content:space-between;">
+          <strong>Debug (txObj)</strong>
+          <button id="debugToggle" class="btn-link">Hide</button>
+        </div>
+        <pre id="debugOut"></pre>
+      </div>
     </div>
 
     <div class="card">
@@ -405,7 +418,7 @@
   </div>
 
   <footer>
-    © 2025 Paxi Pioneers • Built with ❤️ by the Paxi community
+    © 2025 Paxi Pioneers
   </footer>
 
   <script src="bundle.js"></script>
@@ -461,6 +474,12 @@
     const { SigningCosmWasmClient, GasPrice, calculateFee, coins } = window.Cosm;
     // Set showcase image src on load
     (function(){ const el=document.getElementById('showcaseImg'); if(el) el.src = SHOWCASE_IMG; })();
+    // Helpers untuk PaxiHub signing ala PAXI Sender
+    function toB64(bytes){ try{ let bin=''; bytes.forEach(b=> bin+=String.fromCharCode(b)); return btoa(bin); }catch{ return ''; } }
+    function fromB64(str){ try{ const bin=atob(str); const out=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i); return out; }catch{ return new Uint8Array(); } }
+    async function fetchChainIdFromLCD(){ const url = (LCD.replace(/\/$/,'') + '/cosmos/base/tendermint/v1beta1/node_info'); try{ const j = await fetch(url).then(r=>r.json()); return j && j.default_node_info ? j.default_node_info.network : CHAIN_ID; }catch{ return CHAIN_ID; } }
+    async function fetchAccountLCD(addr){ const url = (LCD.replace(/\/$/,'') + '/cosmos/auth/v1beta1/accounts/' + addr); try{ const j = await fetch(url).then(r=>r.json()); const acc = j && j.account ? (j.account.base_account || j.account) : null; return acc ? { accountNumber: Number(acc.account_number||0), sequence: Number(acc.sequence||0) } : { accountNumber: 0, sequence: 0 }; }catch{ return { accountNumber: 0, sequence: 0 }; }
+    }
     // Ensure gallery images have robust fallback
     function bindGalleryImageFallback(){
       document.querySelectorAll('#gallery img[data-token]').forEach(img=>{
@@ -491,14 +510,16 @@
     let client=null, address=null;
     let adminAddress=null, paused=false, maxSupply=10000;
     function shortHash(h){ if(!h) return ''; return h.slice(0,8)+'…'+h.slice(-8); }
-    function mapError(e){ const msg=(e?.message||'').toLowerCase();
+    function mapError(e){
+      const raw = (typeof e === 'string') ? e : (e?.error || e?.message || e?.txResponse?.raw_log || e?.toString?.() || '');
+      const msg = (raw||'').toLowerCase();
       if(msg.includes('paused')) return 'Mint is currently paused by Admin.';
       if(msg.includes('invalid payment')) return 'Payment amount is invalid (price is 10 PAXI per NFT).';
       if(msg.includes('max supply')) return 'Max supply reached. No more mints available.';
       if(msg.includes('invalid quantity')||msg.includes('quantity')) return 'Quantity must be between 1 and 10.';
       if(msg.includes('request rejected')||msg.includes('rejected')) return 'Signature request was cancelled.';
       if(msg.includes('network')||msg.includes('lcd')||msg.includes('rpc')) return 'Network is busy. Please retry shortly.';
-      return e?.message||'Unknown error.';
+      return raw||'Unknown error.';
     }
     function linkTx(tx){ return EXPLORER_BASE ? (EXPLORER_BASE+tx) : '#'; }
     function setStatus(kind, title, sub, opts){
@@ -529,16 +550,48 @@
       // fallback: ignore or show minimal
     };
 
-    const lcdSmart = (q)=> fetch(`${LCD}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart/${btoa(JSON.stringify(q))}`)
-      .then(r=>{ if(!r.ok) throw new Error('LCD '+r.status); return r.json(); })
-      .then(js=>{ const b64=js.data||js.result||js.smart||js.result_data||js.response?.data;
+    async function lcdSmart(q){
+      const json = JSON.stringify(q);
+      const encStd = btoa(json);
+      const encUrl = encStd.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      const base = LCD.replace(/\/$/,'');
+      const decode = (js)=>{
+        const b64 = js.data||js.result||js.smart||js.result_data||js.response?.data;
         if(!b64) return js;
-        const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-        try{ return JSON.parse(new TextDecoder().decode(bytes)); }catch{return{};}
-      });
+        try{ const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0)); return JSON.parse(new TextDecoder().decode(bytes)); }catch{return{};}
+      };
+      // Try GET std
+      try{ const rg = await fetch(`${base}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart/${encStd}`); if(rg.ok){ return decode(await rg.json()); } }catch{}
+      // Try GET url-safe
+      try{ const rg = await fetch(`${base}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart/${encUrl}`); if(rg.ok){ return decode(await rg.json()); } }catch{}
+      // Try POST std
+      try{ const rp = await fetch(`${base}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart`,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ query_data: encStd }) }); if(rp.ok){ return decode(await rp.json()); } }catch{}
+      // Try POST url-safe
+      const rp = await fetch(`${base}/cosmwasm/wasm/v1/contract/${CONTRACT}/smart`,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ query_data: encUrl }) });
+      if(rp.ok){ return decode(await rp.json()); }
+      // Fallback to proxy API (hosted alongside app)
+      try{
+        const pr = await fetch('/api/smart', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ contract: CONTRACT, lcd: LCD, query: q }) });
+        if(pr.ok){ const js=await pr.json(); return js.result || js || {}; }
+      }catch{}
+      throw new Error('Smart query failed');
+    }
 
     async function getConfig(){
       try { return await lcdSmart({ get_config: {} }); } catch { return null; }
+    }
+
+    // Diagnostics helper: check contract info + minted via smart query
+    async function runCheckContract(outEl){
+      try{
+        if(outEl) outEl.textContent = 'Checking...';
+        const info = await lcdSmart({ contract_info: {} }).catch(()=>null);
+        const num  = await lcdSmart({ num_tokens: {} }).catch(()=>null);
+        if(!info){ if(outEl) outEl.textContent = 'Contract not found (smart query)'; toast('Check failed: contract not found','error'); return; }
+        const n = (typeof num === 'object') ? (num.count ?? num.data?.count ?? num.result?.count ?? 0) : Number(num||0);
+        const txt = `ok · name: ${info?.name||'-'} · symbol: ${info?.symbol||'-'} · minted: ${n}`;
+        if(outEl) outEl.textContent = txt; toast('Check OK','success');
+      }catch(e){ if(outEl) outEl.textContent = 'Error: '+(e?.message||'unknown'); toast('Check error: '+(e?.message||'unknown'),'error'); }
     }
 
     async function refresh(){ 
@@ -547,7 +600,19 @@
           lcdSmart({num_tokens:{}}).catch(()=>null),
           getConfig()
         ]);
-        const minted = Number((rSupply && (rSupply.count||rSupply)) || 0);
+        const parseCount = (x)=>{
+          if (x == null) return 0;
+          if (typeof x === 'number') return x;
+          if (typeof x === 'string') return Number(x) || 0;
+          if (typeof x === 'object') return Number(x.count ?? x.data?.count ?? x.result?.count ?? 0) || 0;
+          return 0;
+        };
+        // Ambil minted dari smart query, atau fallback ke get_config.total_minted
+        let minted = parseCount(rSupply);
+        if (!minted && cfg && typeof cfg.total_minted !== 'undefined') {
+          const tm = Number(cfg.total_minted);
+          if (!Number.isNaN(tm)) minted = tm;
+        }
         if (cfg) {
           maxSupply = Number(cfg.max_supply || maxSupply);
           adminAddress = cfg.admin || null;
@@ -580,6 +645,32 @@
           setWalletPref('paxihub');
           log('Connected', { address });
         } else if (hasKeplr) {
+          // Suggest chain ke Keplr agar chain PAXI Testnet otomatis terdaftar
+          try {
+            if (window.keplr.experimentalSuggestChain) {
+              await window.keplr.experimentalSuggestChain({
+                chainId: CHAIN_ID,
+                chainName: 'PAXI Testnet',
+                rpc: RPC,
+                rest: LCD,
+                bip44: { coinType: 118 },
+                bech32Config: {
+                  bech32PrefixAccAddr: 'paxi',
+                  bech32PrefixAccPub: 'paxipub',
+                  bech32PrefixValAddr: 'paxivaloper',
+                  bech32PrefixValPub: 'paxivaloperpub',
+                  bech32PrefixConsAddr: 'paxivalcons',
+                  bech32PrefixConsPub: 'paxivalconspub',
+                },
+                currencies: [ { coinDenom: 'PAXI', coinMinimalDenom: DENOM, coinDecimals: 6 } ],
+                feeCurrencies: [ { coinDenom: 'PAXI', coinMinimalDenom: DENOM, coinDecimals: 6, gasPriceStep: { low: 0.01, average: 0.05, high: 0.1 } } ],
+                stakeCurrency: { coinDenom: 'PAXI', coinMinimalDenom: DENOM, coinDecimals: 6 },
+                features: ['cosmwasm']
+              });
+            }
+          } catch (e) {
+            // Abaikan error suggest; user masih bisa enable manual
+          }
           await window.keplr.enable(CHAIN_ID);
           const signer = window.keplr.getOfflineSignerAuto ? await window.keplr.getOfflineSignerAuto(CHAIN_ID): await window.keplr.getOfflineSigner(CHAIN_ID);
           client = await SigningCosmWasmClient.connectWithSigner(RPC, signer, { prefix:'paxi', gasPrice: GasPrice.fromString('0.05'+DENOM) });
@@ -618,17 +709,35 @@
         // PaxiHub path
         if (window.paxihub && window.paxihub.paxi) {
           const P = window.PaxiCosmJS; if(!P) throw new Error('PaxiCosmJS not ready');
-          const funds = [{ denom: DENOM, amount: String(PRICE*qty) }];
-          const gas = 350000 * qty;
-          const feeAmount = Math.ceil(gas * 0.05); // 0.05 upaxi per gas
-          const fee = { amount: [{ denom: DENOM, amount: String(feeAmount) }], gas: String(gas) };
+          // Siapkan fee/funds
+          const gas = 350000 * qty; const feeUpaxi = String(Math.ceil(gas * 0.05));
+          const feeCoin = P.coins(feeUpaxi, DENOM)[0]; const fundsCoin = P.coins(String(PRICE*qty), DENOM)[0];
+          // Bangun Any MsgExecuteContract
           const bodyBytes = new TextEncoder().encode(JSON.stringify(body));
-          const exec = P.MsgExecuteContract.fromPartial({ sender: address, contract: CONTRACT, msg: bodyBytes, funds });
+          const exec = P.MsgExecuteContract.fromPartial({ sender: address, contract: CONTRACT, msg: bodyBytes, funds: [fundsCoin] });
           const anyMsg = P.Any.fromPartial({ typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract', value: P.MsgExecuteContract.encode(exec).finish() });
-          const txObj = { chainId: CHAIN_ID, msgs: [anyMsg], memo: `mint ${qty}`, fee };
+          // Ambil chainId & account dari LCD
+          const chainId = await fetchChainIdFromLCD();
+          const acc = await fetchAccountLCD(address);
+          // Ambil public key dari paxihub
+          const info = await window.paxihub.paxi.getAddress(); const pubkeyBytes = new Uint8Array(info.public_key||[]);
+          const pubkeyAny = { typeUrl:'/cosmos.crypto.secp256k1.PubKey', value: P.PubKey.encode({ key: pubkeyBytes }).finish() };
+          // Susun TxBody/AuthInfo/SignDoc
+          const txBody = P.TxBody.fromPartial({ messages:[anyMsg], memo: `mint ${qty}` });
+          const authInfo = P.AuthInfo.fromPartial({ signerInfos:[{ publicKey: pubkeyAny, modeInfo:{ single:{ mode:1 } }, sequence: BigInt(acc.sequence) }], fee:{ amount:[feeCoin], gasLimit: Number(gas) } });
+          const signDoc = P.SignDoc.fromPartial({ bodyBytes: P.TxBody.encode(txBody).finish(), authInfoBytes: P.AuthInfo.encode(authInfo).finish(), chainId, accountNumber: BigInt(acc.accountNumber) });
+          // Minta paxihub untuk sign
+          const txObj = { bodyBytes: toB64(signDoc.bodyBytes), authInfoBytes: toB64(signDoc.authInfoBytes), chainId, accountNumber: signDoc.accountNumber.toString() };
+          // Debug: tampilkan txObj yang akan dikirim
+          try { const dc=document.getElementById('debugCard'); const doEl=document.getElementById('debugOut'); if(dc&&doEl){ dc.style.display='block'; doEl.textContent = JSON.stringify(txObj, null, 2); const tgl=document.getElementById('debugToggle'); if(tgl){ tgl.onclick=()=>{ dc.style.display='none'; }; } } } catch {}
+          // Sign & broadcast via LCD
           const r = await window.paxihub.paxi.signAndSendTransaction(txObj);
-          const txhash = r?.txhash || r?.transactionHash || r?.hash || r?.txHash || '';
-          if (!txhash) throw new Error(r?.error || 'Unknown error');
+          const sigB64 = r && (r.success || r.signature || r.sig || ''); if(!sigB64) throw new Error(r?.error || 'No signature returned');
+          const txRaw = P.TxRaw.fromPartial({ bodyBytes: signDoc.bodyBytes, authInfoBytes: signDoc.authInfoBytes, signatures:[fromB64(sigB64)] });
+          const base64Tx = toB64(P.TxRaw.encode(txRaw).finish());
+          const br = await fetch(LCD.replace(/\/$/,'')+'/cosmos/tx/v1beta1/txs',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ tx_bytes: base64Tx, mode: 'BROADCAST_MODE_SYNC' }) }).then(x=>x.json()).catch(()=>null);
+          const txhash = br && br.tx_response ? (br.tx_response.txhash||'') : '';
+          if (!txhash) throw new Error(br && br.tx_response && br.tx_response.raw_log ? br.tx_response.raw_log : 'Unknown broadcast error');
           log('Success',{txhash});
         } else {
           // Keplr/CosmJS path
@@ -649,8 +758,8 @@
       if(!address) return;
       galleryEl.innerHTML = '<p class="muted">Loading your NFTs...</p>';
       try {
-        const res = await lcdSmart({ tokens: { owner: address, limit: 20 }});
-        const tokens = res.tokens || [];
+        const res = await lcdSmart({ tokens: { owner: address, limit: 30 }});
+        const tokens = (res && (res.tokens || res.data?.tokens || res.result?.tokens)) || [];
         if (!tokens.length) { 
           galleryEl.innerHTML = '<p class="muted">No NFTs yet.</p>'; 
           return; 
@@ -670,17 +779,18 @@
     // Fungsi baru: updateSupply() menampilkan "[count] / 10000 MINTED"
     async function updateSupply(){
       try {
+        const parseCount = (x)=>{
+          if (x == null) return 0;
+          if (typeof x === 'number') return x;
+          if (typeof x === 'string') return Number(x) || 0;
+          if (typeof x === 'object') return Number(x.count ?? x.data?.count ?? x.result?.count ?? 0) || 0;
+          return 0;
+        };
         let count = 0;
-        if (client) {
-          try {
-            const res = await client.queryContractSmart(CONTRACT, { num_tokens: {} });
-            count = Number(res?.count ?? res ?? 0);
-          } catch {}
-        }
-        if (!count) {
-          const r = await lcdSmart({ num_tokens: {} });
-          count = Number(r?.count ?? r ?? 0);
-        }
+        // Prefer LCD (lebih universal di PaxiHub)
+        try { const r = await lcdSmart({ num_tokens: {} }); count = parseCount(r); } catch {}
+        // Fallback via client jika masih 0
+        if (!count && client) { try { const r2 = await client.queryContractSmart(CONTRACT, { num_tokens: {} }); count = parseCount(r2); } catch {} }
         const max = Number(maxSupply || 10000);
         supplyEl.textContent = `${count} / ${max} MINTED`;
       } catch {}
@@ -699,10 +809,10 @@
             tokens = r?.tokens || [];
           } catch {}
         }
-        if (!tokens.length) {
+        try {
           const r = await lcdSmart({ tokens: { owner: address, limit: 30 } });
-          tokens = r?.tokens || [];
-        }
+          tokens = r?.tokens || tokens;
+        } catch {}
 
         if (!tokens.length) {
           galleryEl.innerHTML = '<p class="muted">Your collection is empty.</p>';
@@ -826,6 +936,7 @@
     // tombol refresh suplai dihapus; suplai kini otomatis diperbarui
     document.getElementById('copyBtn').onclick=()=>{ if(address){ navigator.clipboard.writeText(address); toast('Address copied','success'); } };
     document.getElementById('disconnectBtn').onclick=disconnect;
+    // (removed Check Contract wiring)
     // Auto-close wallet dropdown when clicking outside or pressing ESC
     (function(){
       const box = document.getElementById('walletBox');
